@@ -62,17 +62,17 @@ const METRICS = [
   {
     key: 'paddingVariants',
     why: 'padding 的**裸值**种数：无设计标尺的症状（曾达 52 种）。目标是用 --tv-sp-* 阶梯',
-    measure: (t) => new Set([...stripVar(t).matchAll(/padding:\s*([^;"}]+)/g)].map((m) => m[1].trim())).size,
+    measure: (t) => new Set([...stripVar(t).matchAll(/padding:\s*([^;"}\n]+)/g)].map((m) => m[1].trim())).size,
   },
   {
     key: 'fontSizeVariants',
     why: 'font-size 的裸值种数：应来自官方字号阶梯（11/12/13/14/16/18/20/24）',
-    measure: (t) => new Set([...stripVar(t).matchAll(/font-size:\s*([^;"}]+)/g)].map((m) => m[1].trim())).size,
+    measure: (t) => new Set([...stripVar(t).matchAll(/font-size:\s*([^;"}\n]+)/g)].map((m) => m[1].trim())).size,
   },
   {
     key: 'radiusVariants',
     why: 'border-radius 的裸值种数：应走 --dsw-radius-{xs,sm,md,lg,xl,panel}',
-    measure: (t) => new Set([...stripVar(t).matchAll(/border-radius:\s*([^;"}]+)/g)].map((m) => m[1].trim())).size,
+    measure: (t) => new Set([...stripVar(t).matchAll(/border-radius:\s*([^;"}\n]+)/g)].map((m) => m[1].trim())).size,
   },
   {
     key: 'zIndexValues',
@@ -111,6 +111,7 @@ if (update) {
   const prev = JSON.parse(readFileSync(BUDGET_FILE, 'utf8'))
   const next = { ...prev }
   const worse = []
+  const allowRise = process.argv.includes('--allow-rise')
   for (const m of METRICS) {
     const k = m.key
     if (prev[k] === undefined) { next[k] = current[k]; continue }
@@ -119,16 +120,22 @@ if (update) {
       next[k] = Math.max(prev[k], current[k])
     } else {
       if (current[k] > prev[k]) worse.push(`${k}: ${prev[k]} → ${current[k]}`)
-      next[k] = Math.min(prev[k], current[k])
+      next[k] = allowRise ? current[k] : Math.min(prev[k], current[k])
     }
   }
-  if (worse.length) {
+  if (worse.length && !allowRise) {
     console.error('❌ 预算方向错误。以下指标退步了：')
     worse.forEach((r) => console.error('   ' + r))
+    console.error('\n如果这是**新增组件基元**（而非收编既有代码）造成的合理上升，')
+    console.error('用 `--update --allow-rise` 显式接受；接受时请复核并记录。')
     process.exit(1)
   }
+  if (worse.length && allowRise) {
+    console.warn('⚠️ 已接受以下上调（请复核是否确属新增组件所需）：')
+    worse.forEach((r) => console.warn('   ' + r))
+  }
   writeFileSync(BUDGET_FILE, JSON.stringify(next, null, 2) + '\n')
-  console.log('✅ 预算已更新（上限只降、下限只升）')
+  console.log('✅ 预算已更新（上限只降、下限只升' + (allowRise && worse.length ? '；含已接受的上调' : '') + '）')
   process.exit(0)
 }
 

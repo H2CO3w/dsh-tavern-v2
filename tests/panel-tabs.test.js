@@ -43,6 +43,9 @@ function extractFnSource(bundleText, signature) {
 /**
  * 面板 markup 里的**顶层卡片**：标题 + 它自己声明的归属。
  * 注释掉的卡片不算（`// '  <div class="t-card">...`），所以按 <div> 深度只取深度 1 的卡片。
+ *
+ * ⚠️ 收编期间两类名并存：旧 `.t-card` / `.t-card-title` 与新基元 `.tv-card` / `.tv-card__title`。
+ *    两者都必须被识别，否则已收编的卡片会在测试里"消失"——看着通过，其实漏了。
  */
 const CARDS = (() => {
   const src = extractFnSource(text, 'function panelHTML(')
@@ -54,17 +57,21 @@ const CARDS = (() => {
     if (line.startsWith('//')) continue
     const opens = (line.match(/<div\b/g) || []).length
     const closes = (line.match(/<\/div>/g) || []).length
-    if (/<div class="t-card\b/.test(line)) {
+    if (/<div class="(?:t|tv)-card\b/.test(line)) {
       // #tavern-manager 是唯一的深度 1；卡片自己的 div 开在这一层 ⇒ 它是顶层卡片
       if (depth === 1) {
-        pending = { title: '', tab: (line.match(/data-tv-tab="([^"]+)"/) || [])[1] || '' }
+        pending = {
+          title: '',
+          tab: (line.match(/data-tv-tab="([^"]+)"/) || [])[1] || '',
+          cls: (line.match(/<div class="([^"]+)"/) || [])[1] || 't-card',
+        }
         out.push(pending)
       } else {
         pending = null
       }
       depth += 1
     } else {
-      const titleM = line.match(/<span class="t-card-title"[^>]*>([^<]{1,80})/)
+      const titleM = line.match(/<span class="(?:t|tv)-card(?:-title|__title)"[^>]*>([^<]{1,80})/)
       if (titleM && pending) pending.title = titleM[1].trim()
       depth += opens
     }
@@ -154,7 +161,10 @@ class MiniEl {
     return this.parentNode.children[i + 1] || null
   }
   getText() { return (this.textContent || '') + this.children.map((c) => c.getText()).join('') }
-  matches(sel) {
+  /** 支持逗号分隔的选择器列表（收编期间要同时匹配 .t-card 与 .tv-card） */
+  matches(sel) { return String(sel).split(',').some((s) => this.matchesOne(s.trim())) }
+  matchesOne(sel) {
+    if (!sel) return false
     if (sel.startsWith('.')) return this.classList.contains(sel.slice(1))
     if (sel.startsWith('#')) return this.attrs.id === sel.slice(1)
     return this.tagName === sel.toUpperCase()
@@ -177,10 +187,10 @@ function buildPanel() {
   // 真卡片：标题与归属都取自真 markup
   for (const c of CARDS) {
     const card = new MiniEl('div')
-    card.className = 't-card'
+    card.className = c.cls || 't-card'
     if (c.tab) card.setAttribute('data-tv-tab', c.tab)
     const t = new MiniEl('span')
-    t.className = 't-card-title'
+    t.className = (c.cls || '').indexOf('tv-card') === 0 ? 'tv-card__title' : 't-card-title'
     t.textContent = c.title
     card.appendChild(t)
     mgr.appendChild(card)
@@ -292,7 +302,7 @@ test('⑤ 真跑 installPanelTabs：所有卡片进页签、footer 留在页签�
   assert.equal(panes.length, TAB_DEFS.length, TAB_DEFS.length + ' 个 pane')
 
   // 每张卡片都必须落在**它自己声明**的那个 pane 里
-  const cards = after.querySelectorAll('.t-card')
+  const cards = after.querySelectorAll('.t-card, .tv-card')
   assert.equal(cards.length, CARDS.length, '卡片数量不能变（搬家不许丢）')
   for (const card of cards) {
     const pane = card.parentNode
@@ -357,5 +367,5 @@ test('⑧ 幂等：重复调用不会生成第二套页签', () => {
   const { mgr: after } = runInstaller(mgr, {})
   assert.equal(after.querySelectorAll('#tavern-tabbar').length, 1)
   assert.equal(after.querySelectorAll('.t-pane').length, TAB_DEFS.length)
-  assert.equal(after.querySelectorAll('.t-card').length, CARDS.length)
+  assert.equal(after.querySelectorAll('.t-card, .tv-card').length, CARDS.length)
 })
