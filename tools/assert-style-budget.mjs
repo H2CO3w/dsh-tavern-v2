@@ -26,6 +26,25 @@ const BUDGET_FILE = path.resolve(HERE, 'style-budget.json')
  * ⚠️ 指标设计原则：**只统计裸值**。`var(--dsw-radius-md)` 是目标形态，不是违规；
  *    把它算成"一个圆角变体"会把方向搞反（初版就犯过这个错）。
  */
+/**
+ * 剥掉注释再统计。
+ * ⚠️ 必须做这一步：本文件充斥着引用官方 CSS 的说明性注释（例如
+ *    `// 官方 .field { padding:12px 0 }`），注释里的字面量不是违规代码。
+ *    不剥注释会出现"越写文档越超预算"的荒唐结果（初版就踩了）。
+ */
+function stripComments(src) {
+  const out = []
+  let inBlock = false
+  for (const line of src.split('\n')) {
+    const t = line.trim()
+    if (inBlock) { if (t.includes('*/')) inBlock = false; continue }
+    if (t.startsWith('/*')) { if (!t.includes('*/')) inBlock = true; continue }
+    if (t.startsWith('//')) continue
+    out.push(line.replace(/\/\/.*$/, ''))
+  }
+  return out.join('\n')
+}
+
 const stripVar = (t) => t.replace(/var\([^()]*(?:\([^()]*\))?[^()]*\)/g, 'VAR')   // 含一层嵌套
 
 const METRICS = [
@@ -102,7 +121,7 @@ const METRICS = [
   },
 ]
 
-const text = readFileSync(BUNDLE, 'utf8')
+const text = stripComments(readFileSync(BUNDLE, 'utf8'))
 const update = process.argv.includes('--update')
 const current = {}
 for (const m of METRICS) current[m.key] = m.measure(text)
