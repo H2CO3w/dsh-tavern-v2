@@ -296,9 +296,9 @@ test('⑤ 真跑 installPanelTabs：所有卡片进页签、footer 留在页签�
 
   const bar = after.querySelector('#tavern-tabbar')
   assert.ok(bar, '应当生成页签栏')
-  assert.equal(bar.querySelectorAll('.t-tab').length, TAB_DEFS.length, TAB_DEFS.length + ' 个页签按钮')
+  assert.equal(bar.querySelectorAll('.tv-tab').length, TAB_DEFS.length, TAB_DEFS.length + ' 个页签按钮')
 
-  const panes = after.querySelectorAll('.t-pane')
+  const panes = after.querySelectorAll('.tv-pane')
   assert.equal(panes.length, TAB_DEFS.length, TAB_DEFS.length + ' 个 pane')
 
   // 每张卡片都必须落在**它自己声明**的那个 pane 里
@@ -306,17 +306,17 @@ test('⑤ 真跑 installPanelTabs：所有卡片进页签、footer 留在页签�
   assert.equal(cards.length, CARDS.length, '卡片数量不能变（搬家不许丢）')
   for (const card of cards) {
     const pane = card.parentNode
-    assert.ok(pane && pane.classList && pane.classList.contains('t-pane'),
+    assert.ok(pane && pane.classList && pane.classList.contains('tv-pane'),
       '卡片没被收进页签：' + card.getText().slice(0, 20))
     assert.equal(pane.getAttribute('data-tab'), card.getAttribute('data-tv-tab'), '卡片去了错的页签')
   }
 
-  // footer 必须留在页签之外：向上走直到 #tavern-manager，中途不许经过任何 .t-pane
+  // footer 必须留在页签之外：向上走直到 #tavern-manager，中途不许经过任何 .tv-pane
   const insidePane = (el) => {
     let n = el.parentNode
     while (n) {
       if (n.attrs && n.attrs.id === 'tavern-manager') return false
-      if (n.classList && n.classList.contains('t-pane')) return true
+      if (n.classList && n.classList.contains('tv-pane')) return true
       n = n.parentNode
     }
     return false
@@ -341,9 +341,9 @@ test('⑥ 切页签：点按钮 → 只有该页签可见、说明行跟随、�
   const { store } = runInstaller(mgr, {})
   const bar = mgr.querySelector('#tavern-tabbar')
   const target = TAB_DEFS[2]
-  const btn = bar.querySelectorAll('.t-tab').find((b) => b.getAttribute('data-tab') === target.key)
+  const btn = bar.querySelectorAll('.tv-tab').find((b) => b.getAttribute('data-tab') === target.key)
   btn.dispatch('click')
-  const active = mgr.querySelectorAll('.t-pane').filter((p) => p.classList.contains('active'))
+  const active = mgr.querySelectorAll('.tv-pane').filter((p) => p.classList.contains('active'))
   assert.equal(active.length, 1)
   assert.equal(active[0].getAttribute('data-tab'), target.key)
   assert.equal(store['tavern.panel.tab'], target.key, '当前页签要记住')
@@ -353,12 +353,12 @@ test('⑥ 切页签：点按钮 → 只有该页签可见、说明行跟随、�
 test('⑦ 上次停留的页签会被恢复；非法值回落第一个页签', () => {
   const mgrA = buildPanel()
   runInstaller(mgrA, { 'tavern.panel.tab': 'memory' })
-  const activeA = mgrA.querySelectorAll('.t-pane').filter((p) => p.classList.contains('active'))
+  const activeA = mgrA.querySelectorAll('.tv-pane').filter((p) => p.classList.contains('active'))
   assert.equal(activeA[0].getAttribute('data-tab'), 'memory')
 
   const mgrB = buildPanel()
   runInstaller(mgrB, { 'tavern.panel.tab': '不存在的页签' })
-  const activeB = mgrB.querySelectorAll('.t-pane').filter((p) => p.classList.contains('active'))
+  const activeB = mgrB.querySelectorAll('.tv-pane').filter((p) => p.classList.contains('active'))
   assert.equal(activeB[0].getAttribute('data-tab'), TAB_DEFS[0].key, '非法值必须回落，不能白屏')
 })
 
@@ -366,6 +366,6 @@ test('⑧ 幂等：重复调用不会生成第二套页签', () => {
   const mgr = buildPanel()
   const { mgr: after } = runInstaller(mgr, {})
   assert.equal(after.querySelectorAll('#tavern-tabbar').length, 1)
-  assert.equal(after.querySelectorAll('.t-pane').length, TAB_DEFS.length)
+  assert.equal(after.querySelectorAll('.tv-pane').length, TAB_DEFS.length)
   assert.equal(after.querySelectorAll('.t-card, .tv-card').length, CARDS.length)
 })
