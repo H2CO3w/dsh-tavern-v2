@@ -634,7 +634,7 @@ test('对照臂：不注入 helper（等价于它在别的作用域里）⇒ 状
 })
 test('面板 HTML：三个 UI 概念的按钮文案齐全且互不相同', () => {
   const html = fs.readFileSync(BUNDLE, 'utf8')
-  assert.match(html, /id="tavern-binding-unbind"[^>]*>🔓 解绑本会话</)
+  assert.match(html, /id="tavern-binding-unbind"[^>]*>解绑本会话</)
   assert.match(html, /id="tavern-binding-apply-current"[^>]*>✅ 应用到当前会话</)
   assert.match(html, /id="tavern-binding-new-session"[^>]*>🆕 换绑并仅对新会话生效</)
   assert.match(html, /id="tavern-binding-next-select"/)
