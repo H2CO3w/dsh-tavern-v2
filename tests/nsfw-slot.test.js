@@ -224,8 +224,16 @@ test('⑬ 源码护栏：客户端必须提供开关与正文输入框，且面�
   assert.ok(cli.includes('id="tavern-nsfw-enabled"'), '开关不见了')
   assert.ok(cli.includes('id="tavern-nsfw-prompt"'), '正文输入框不见了')
   assert.ok(cli.includes('id="tavern-nsfw-save"'), '保存按钮不见了')
-  assert.ok(cli.includes("titles: ['🎭 剧情选项', '🔞 成人向提示段'"),
-    '★ 卡片必须挂进 🎲 玩法 页签 —— 否则它会落到默认页签里、用户找不到（这正是历史上那张卡片踩过的坑）')
+  // 归属改由 markup 上的 data-tv-tab 声明（旧的 titles 前缀匹配已随 IA 重做移除）。
+  // 直接定位这张卡的起始标签，验证它确实挂进了「行为逻辑」——它和剧情选项 / 全局正则同属
+  // 「能写什么」这一类，原先都在「玩法」页签里。
+  const switchAt = cli.indexOf('id="tavern-nsfw-enabled"')
+  assert.ok(switchAt >= 0, '开关不见了')
+  const cardOpen = cli.lastIndexOf('<div class="tv-card"', switchAt)
+  assert.ok(cardOpen >= 0, '找不到成人段卡片的起始标签')
+  const cardTag = cli.slice(cardOpen, cli.indexOf('>', cardOpen))
+  assert.ok(cardTag.includes('data-tv-tab="behavior"'),
+    '★ 卡片必须挂进「行为逻辑」页签 —— 否则它会落到默认页签里、用户找不到（这正是历史上那张卡片踩过的坑）')
   assert.ok(cli.includes("POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }")
     || /nsfwPrompt: area\.value/.test(cli), '必须真的把正文 POST 出去')
 })
