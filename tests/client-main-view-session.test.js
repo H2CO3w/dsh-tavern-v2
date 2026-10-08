@@ -187,15 +187,15 @@ function loadMatchPreset() {
 
 test('[14] matchPresetInList：id（目录名）/ presetId（注册表 id）/ dir 三种写法都认', () => {
   const list = [
-    { id: 'tavern-lite', presetId: 'default', name: '酒馆默认', dir: 'C:\\Users\\x\\.dsh\\.agent-presets\\tavern-lite' },
-    { id: 'preset-role', presetId: 'preset-role', name: '角色扮演', dir: 'C:\\Users\\x\\.dsh\\.agent-presets\\preset-role' },
+    { id: 'tavern-lite', presetId: 'default', name: '酒馆默认', dir: 'C:\\Users\\xxx\\.dsh\\.agent-presets\\tavern-lite' },
+    { id: 'preset-role', presetId: 'preset-role', name: '角色扮演', dir: 'C:\\Users\\xxx\\.dsh\\.agent-presets\\preset-role' },
     { id: 'agent-only', presetId: null, name: '深潜区', dir: 'agent-only' },
   ]
   const match = loadMatchPreset()
 
   assert.equal(match(list, 'tavern-lite').name, '酒馆默认', '① 按列表 id（DSH 目录名）')
   assert.equal(match(list, 'default').name, '酒馆默认', '② ★ 按酒馆注册表 id（账本里记的就是它）')
-  assert.equal(match(list, 'C:\\Users\\x\\.dsh\\.agent-presets\\preset-role').name, '角色扮演', '③ 按 dir 绝对路径')
+  assert.equal(match(list, 'C:\\Users\\xxx\\.dsh\\.agent-presets\\preset-role').name, '角色扮演', '③ 按 dir 绝对路径')
   assert.equal(match(list, 'preset-role').name, '角色扮演', '④ 目录名与 id 同名时同样命中')
   assert.equal(match(list, 'agent-only').name, '深潜区', '裸目录名的 agent 预设也认')
   assert.equal(match(list, 'nope'), null, '真的不存在才返回 null（不许瞎认）')
